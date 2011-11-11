@@ -1,0 +1,135 @@
+<canvas id='canvas' height=500 width=500>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
+
+<script>
+// I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just cirles.
+
+//For scoring:
+//1 cirplosion left = 50 points
+//1s = 10 points
+
+var Cirplosion = {
+	state : '', //4 states. '', grow, ready, boom. '' is where it just follows the mouse. 
+	circles : [], //Array to manage the circles. Each index will be an object with x and y
+	rad : 0,
+	orbRad : 5,
+	init : function (id){
+		var that = this; // Trying to make it flexible so you can just change the object name and break nothing
+		this.canvas = document.getElementById(id);
+		this.ctx = this.canvas.getContext('2d');
+		this.canvas.addEventListener('mousedown', function (){
+			that.selectedColour = 'rgb('+Math.round(Math.random()*255)+','+Math.round(Math.random()*255)+','+Math.round(Math.random()*255)+')'; //Gives the growing bomb a random colour.
+			that.state = (that.state === '') ? 'grow' : 'boom'; //If it's just following the mouse around, start growing, else BOOM!
+		});
+		this.canvas.addEventListener('mouseup', function (){
+			that.state = (that.state === 'grow') ? 'ready' : (that.state === 'boom') ? 'boom' : ''; //If it was previously growing and didn't burst, make it ready. If it wasn't growing AND if it wasn't bursting, set it to follow the mouse around
+		});
+		this.canvas.addEventListener('mousemove', function (e){
+			that.x = e.pageX - this.offsetLeft; //This is canvas, that is Cirplosion
+			that.y = e.pageY - this.offsetTop;
+			//that.main(); //Keep it responsive. Change the bomb's position right away!
+		});
+		
+		setInterval(function (){
+			that.main(); //The function to draw and control all of those bouncing circles and the bomb
+		}, 100/3);
+		
+		this.drawCircles(5);
+	},
+	
+	//MAIN FUNCTION. DOES *EVERYTHING* BECAUSE I COULDN'T THINK OF A WAY TO CREATE SEPERATE FUNCTIONS. SORRY FOR SCREAMING!
+	
+	main : function (){ //n is the number of circles to draw. Changes for levels
+		this.canvas.width = this.canvas.width; //Clear canvas. For some reason, clearRect won't work for me on Chrome
+		this.ctx.fillStyle = 'black';
+		this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); //Set the background
+		
+		//Let's make those orbs!
+		
+		var blasts = [],
+		    cir = this.circles;
+		if(cir.length === 0){
+			this.drawCircles(2);
+		}
+		else {
+			for(var i=0; i < cir.length; i++){
+				cir[i].disx *= (cir[i].x + cir[i].rad >= this.canvas.width || cir[i].x - cir[i].rad <= 0) ? -1 : 1;
+				cir[i].disy *= (cir[i].y + cir[i].rad >= this.canvas.height || cir[i].y - cir[i].rad <= 0) ? -1 : 1;
+				cir[i].x += cir[i].disx;
+				cir[i].y += cir[i].disy;
+				this.circle(cir[i].x, cir[i].y, cir[i].rad, 'orange', 1);
+			
+				//If it collides, check which one it is, growing, or boom-ing
+				if( Math.pow(this.x - cir[i].x, 2) + Math.pow(this.y - cir[i].y, 2) <= Math.pow(this.rad + cir[i].rad, 2) ){
+					if(this.state === 'grow'){
+						this.state = '';
+					}
+					else if(this.state === 'boom'){
+						cir[i] = undefined;
+					}
+				}
+			}
+		}
+		
+		//if there are any undefined values in the array, remove them.
+		while(cir.indexOf(undefined) >= 0){
+			cir.splice(cir.indexOf(undefined), 1);
+		}
+		
+		//The bomb's code. I put the orbs first because when the bomb's in the 'ready' state, it should be over the orbs
+		switch(this.state){
+			case '':
+				this.rad = 5; //Reset the radius because it burst
+				this.circle(this.x, this.y, 5, 'white', 0.5);
+				break;
+			case 'grow':
+				this.rad++;
+				if(	this.x + this.rad >= this.canvas.width ||
+					this.x - this.rad <= 0 ||
+					this.y + this.rad >= this.canvas.height ||
+					this.y - this.rad <= 0
+				) {
+					this.state = '';
+				}
+				
+				this.circle(this.x, this.y, this.rad, this.selectedColour);
+				break;
+			case 'ready':
+				this.circle(this.x, this.y, this.rad, 'white', 0.5);
+				break;
+			case 'boom':
+				this.state = ''; //Set it back to following it around
+				break;
+		}
+
+		
+	},
+	
+	//This is just the inital function used to create the circles at the beginning of each level
+	drawCircles : function (n){
+		var that = this;
+		for(var i=0; i < n; i++){
+			this.circles.push(
+			{
+				rad : that.orbRad,
+				x : Math.floor(Math.random() * this.canvas.width),
+				y : Math.floor(Math.random() * this.canvas.height),
+				disx : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(4) is the max speed
+				disy : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(1) is the min speed
+			}
+			); //Put the object in an array so I can compare it for collission detection
+		}
+	},
+	
+	//Easier than ctx.arc each time
+	circle : function (x, y, rad, colour, alpha){
+		this.ctx.beginPath();
+		this.ctx.fillStyle = colour || 'black';
+		this.ctx.globalAlpha = alpha || 1;
+		this.ctx.arc(x, y, rad, 0, Math.PI * 2, true);
+		this.ctx.closePath();
+		this.ctx.fill();
+	}
+	
+};
+Cirplosion.init('canvas');
+</script>
