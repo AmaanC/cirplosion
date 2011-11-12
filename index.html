@@ -1,7 +1,22 @@
-<canvas id='canvas' height=500 width=500>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="user-scalable=no, width=device-width, height=device-height" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Cirplosion - An canvas based game</title>
+<style>
+body, canvas {
+	margin: 0px;
+}
+</style>
+</head>
+
+<body>
+<canvas id='canvas'>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
 
 <script>
-// I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just cirles.
+// I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just cirles. In the middle somehwere, I played the game again, and started calling them orbs. So circles === orbs
 
 //For scoring:
 //1 cirplosion left = 50 points
@@ -13,21 +28,42 @@ var Cirplosion = {
 	rad : 0,
 	orbRad : 5,
 	init : function (id){
-		var that = this; // Trying to make it flexible so you can just change the object name and break nothing
+		var that = this;
 		this.canvas = document.getElementById(id);
 		this.ctx = this.canvas.getContext('2d');
-		this.canvas.addEventListener('mousedown', function (){
+		var touchm = ("ontouchmove" in this.canvas);
+		if(touchm){
+			this.canvas.width = window.innerWidth;
+			this.canvas.height = window.innerHeight; // For touch screen devices, make it go fullscreen
+			document.body.addEventListener('touchmove', function (e){
+				e.preventDefault();
+			}, false);
+			//Note to self: Opera needs the 3rd boolean paramater in addEventListener.
+		}
+		else {
+			this.canvas.width = 500;
+			this.canvas.height = 500;
+		}
+		var md = ('ontouchstart' in this.canvas) ? "touchstart" : "mousedown";
+		var mu = ("ontouchend" in this.canvas) ? "touchend" : "mouseup";
+		var mm = touchm ? "touchmove" : "mousemove";
+		
+		this.canvas.addEventListener(md, function (e){
 			that.selectedColour = 'rgb('+Math.round(Math.random()*255)+','+Math.round(Math.random()*255)+','+Math.round(Math.random()*255)+')'; //Gives the growing bomb a random colour.
-			that.state = (that.state === '') ? 'grow' : 'boom'; //If it's just following the mouse around, start growing, else BOOM!
-		});
-		this.canvas.addEventListener('mouseup', function (){
-			that.state = (that.state === 'grow') ? 'ready' : (that.state === 'boom') ? 'boom' : ''; //If it was previously growing and didn't burst, make it ready. If it wasn't growing AND if it wasn't bursting, set it to follow the mouse around
-		});
-		this.canvas.addEventListener('mousemove', function (e){
-			that.x = e.pageX - this.offsetLeft; //This is canvas, that is Cirplosion
-			that.y = e.pageY - this.offsetTop;
+			that.state = (that.state === '') ? 'grow' : 'ready'; //If it's just following the mouse around, start growing, else keep it ready.
+			that.x = ((touchm) ? e.touches[0].pageX : e.pageX) - this.offsetLeft; //This is canvas, that is Cirplosion
+			that.y = ((touchm) ? e.touches[0].pageY : e.pageY) - this.offsetTop; // On some touchscreen phones e.pageX doesn't work, so I have to use e.touches[0].pageX because that works everywhere
+			e.preventDefault();
+		}, false);
+		this.canvas.addEventListener(mu, function (){
+			that.state = (that.state === 'grow') ? 'ready' : (that.state === 'ready') ? 'boom' : ''; //If it was previously growing and didn't burst, make it ready. If it wasn't growing and if it was ready, BOOM!
+		}, false);
+		this.canvas.addEventListener(mm, function (e){
+			that.x = ((touchm) ? e.touches[0].pageX : e.pageX) - this.offsetLeft;
+			that.y = ((touchm) ? e.touches[0].pageY : e.pageY) - this.offsetTop;
+			e.preventDefault();
 			//that.main(); //Keep it responsive. Change the bomb's position right away!
-		});
+		}, false);
 		
 		setInterval(function (){
 			that.main(); //The function to draw and control all of those bouncing circles and the bomb
@@ -111,8 +147,8 @@ var Cirplosion = {
 			this.circles.push(
 			{
 				rad : that.orbRad,
-				x : Math.floor(Math.random() * this.canvas.width),
-				y : Math.floor(Math.random() * this.canvas.height),
+				x : that.orbRad + Math.floor(Math.random() * (this.canvas.width - that.orbRad * 2)),
+				y : that.orbRad + Math.floor(Math.random() * (this.canvas.height - that.orbRad * 2)),
 				disx : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(4) is the max speed
 				disy : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(1) is the min speed
 			}
@@ -133,3 +169,7 @@ var Cirplosion = {
 };
 Cirplosion.init('canvas');
 </script>
+
+
+</body>
+</html>
