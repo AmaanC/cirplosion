@@ -8,22 +8,34 @@
 <style>
 body, canvas {
 	margin: 0px;
+	padding : 0px;
+}
+.button{
+	color : white;
+	padding : 10px;
+	border : solid white;
+	border-radius : 10px;
+	overflow : none;
 }
 </style>
 </head>
 
 <body>
 <canvas id='canvas'>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
-
 <script>
-// I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just cirles. In the middle somehwere, I played the game again, and started calling them orbs. So circles === orbs
+// I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just circles. In the middle somewhere, I played the game again, and started calling them orbs. So circles === orbs
 
 //For scoring:
 //1 cirplosion left = 50 points
 //1s = 10 points
+//Attempts:
+//1 attempt = 100 points
+//2 attempts = 50 points
+//3 attempts = 25 points
+//3+ attempts = 0 points
 
 var Game = function (){
-	var state = '', //4 states. '', grow, ready, boom. '' is where it just follows the mouse. 
+	var state = '', //4 states. '', grow, ready, boom. '' is where it just follows the mouse. The other are self-explanatory
 	    circles = [], //Array to manage the circles. Each index will be an object with x and y
 	    rad = 0,
 	    orbRad = 5,
@@ -32,6 +44,7 @@ var Game = function (){
 	    score = 0, //Private variables ftw!
 	    level = 0,
 	    orbLevels = [1,2,3,1,5];
+
 	this.init = function (id){
 		var that = this;
 		canvas = document.getElementById(id);
@@ -76,7 +89,9 @@ var Game = function (){
 	};
 	
 	//MAIN FUNCTION. DOES *EVERYTHING* BECAUSE I COULDN'T THINK OF A WAY TO CREATE SEPERATE FUNCTIONS. SORRY FOR SCREAMING!
-	
+	this.collide = function (obj1){
+		return (Math.pow(this.x - obj1.x, 2) + Math.pow(this.y - obj1.y, 2) <= Math.pow(rad + obj1.rad, 2)) //Check if any object is colliding with the current bomb
+	}
 	this.main = function (){ //n is the number of circles to draw. Changes for levels
 		canvas.width = canvas.width; //Clear canvas. For some reason, clearRect won't work for me on Chrome
 		ctx.fillStyle = 'black';
@@ -93,14 +108,14 @@ var Game = function (){
 		}
 		else {
 			for(var i=0; i < cir.length; i++){
-				cir[i].disx *= (cir[i].x + cir[i].rad >= canvas.width || cir[i].x - cir[i].rad <= 0) ? -1 : 1;
-				cir[i].disy *= (cir[i].y + cir[i].rad >= canvas.height || cir[i].y - cir[i].rad <= 0) ? -1 : 1;
+				cir[i].disx *= (cir[i].x + cir[i].rad + cir[i].disx >= canvas.width || cir[i].x - cir[i].rad + cir[i].disx <= 0) ? -1 : 1;
+				cir[i].disy *= (cir[i].y + cir[i].rad + cir[i].disy >= canvas.height || cir[i].y - cir[i].rad + cir[i].disy <= 0) ? -1 : 1;
 				cir[i].x += cir[i].disx;
 				cir[i].y += cir[i].disy;
 				this.circle(cir[i].x, cir[i].y, cir[i].rad, 'orange', 1);
 			
 				//If it collides, check which one it is, growing, or boom-ing
-				if( Math.pow(this.x - cir[i].x, 2) + Math.pow(this.y - cir[i].y, 2) <= Math.pow(rad + cir[i].rad, 2) ){
+				if( this.collide(cir[i], this) ){
 					if(state === 'grow'){
 						state = '';
 					}
@@ -138,6 +153,19 @@ var Game = function (){
 				this.circle(this.x, this.y, rad, 'white', 0.5);
 				break;
 			case 'boom':
+				// Have those orbs that didn't blast's speeds affected
+				for(var i=0; i < cir.length; i++){
+					var distance = Math.sqrt( Math.pow(cir[i].x - this.x, 2) + Math.pow(cir[i].y - this.y, 2) );
+					var force = rad * 5/distance;
+					var gradient = (cir[i].y - this.y) / (cir[i].x - this.x);
+					var xFromImpact = force / Math.sqrt(1 + (gradient * gradient) );
+					var yFromImpact = xFromImpact * Math.abs(gradient);
+					xFromImpact *= (cir[i].x >= this.x) ? 3 : -3;
+					yFromImpact *= (cir[i].y >= this.y) ? 3 : -3;
+					cir[i].disx += xFromImpact;
+					cir[i].disy += yFromImpact;
+				}
+				//I know that isn't the best way to be calculating the forces, but I'm lazy, so sorry
 				state = ''; //Set it back to following it around
 				break;
 		}
@@ -157,7 +185,7 @@ var Game = function (){
 				disx : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(4) is the max speed
 				disy : (1 + Math.round(Math.random() * 3)) * [1, -1][Math.round(Math.random())], //abs(1) is the min speed
 			}
-			); //Put the object in an array so I can compare it for collission detection
+			); //Put the object in an array so I can compare it for collision detection
 		}
 	};
 	
@@ -171,11 +199,26 @@ var Game = function (){
 		ctx.fill();
 	};
 	
+	this.newButton = function (width, height, left, top, text, callback){
+		var div = document.createElement('div');
+		div.className = 'button';
+		div.style.position = 'absolute';
+		if(width !== undefined){
+			div.style.offsetWidth = width + 'px';
+		}
+		if(height !== undefined){
+			div.style.offsetHeight = height + 'px';
+		}
+//		div.style.left = left * canvas.width - width/2 + canvas.offsetLeft + 'px';
+		div.style.top = top * canvas.height - height/2 + canvas.offsetTop + 'px';
+		div.textContent = text;
+		document.body.appendChild(div);
+		div.addEventListener('click', callback, false);
+	}
+	
 };
 var Cirplosion = new Game();
 Cirplosion.init('canvas');
 </script>
-
-
 </body>
 </html>
