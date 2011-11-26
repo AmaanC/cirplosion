@@ -94,10 +94,10 @@ a{
 <div id='bottom'>
 	Music<input id='music' type='checkbox'>
 	SFX<input id='sfx' type='checkbox'>
-	<span class='right'>
-		<span id='restart' style='cursor : pointer'>Restart level</span>
+	<span class="right">
+		<span id="restart" style="cursor : pointer" title="Shortcut: R key"><u>R</u>estart level</span>
 		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-		<span id='pause' style='cursor:pointer;'>Pause</span>
+		<span id="pause" style="cursor:pointer" title="Shortcut: Spacebar">Pause</span>
 	</span>
 </div>
 
@@ -115,7 +115,6 @@ a{
 	</p>
 	</center>
 </div>
-
 <script>
 // I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just circles. In the middle somewhere, I played the game again, and started calling them orbs. So circles === orbs
 
@@ -221,7 +220,7 @@ var Game = function (){
 		}
 		else {
 			canvas.width = 500;
-			canvas.height = 500 - id('top').offsetHeight;
+			canvas.height = 500 - id('top').offsetHeight - id('bottom').offsetHeight;
 		}
 		var md = ('ontouchstart' in canvas) ? "touchstart" : "mousedown";
 		var mu = ("ontouchend" in canvas) ? "touchend" : "mouseup";
@@ -257,12 +256,12 @@ var Game = function (){
 		var right = document.getElementsByClassName('right')
 		for(var i=0, len = right.length; i < len; i++){
 			right[i].style.position = 'absolute';
-			right[i].style.left = canvas.width - right[i].offsetWidth + 'px';
+			right[i].style.left = canvas.offsetLeft + canvas.width - right[i].offsetWidth + 'px';
 		}
 		var center = document.getElementsByClassName('center')
 		for(var i=0, len = center.length; i < len; i++){
 			center[i].style.position = 'absolute';
-			center[i].style.left = (canvas.width - center[i].offsetWidth) / 2 + 'px';
+			center[i].style.left = canvas.offsetLeft + (canvas.width - center[i].offsetWidth) / 2 + 'px';
 		}
 		
 		for(var i=0, len = orbLevels.length; i < len; i++){
@@ -577,7 +576,7 @@ var Game = function (){
 			div.style.fontSize = 'small';
 		}
 		div.style.left = left * canvas.width - div.offsetWidth/2 + canvas.offsetLeft + 'px';
-		div.style.top = top * canvas.height - (div.offsetHeight + id('top').offsetHeight)/2 + canvas.offsetTop + 'px';
+		div.style.top = top * canvas.height - (div.offsetHeight + id('top').offsetHeight + id('bottom').offsetHeight)/2 + canvas.offsetTop + 'px';
 		if(callback){
 			div.addEventListener('click', callback, false);
 		}
@@ -632,7 +631,7 @@ var Game = function (){
 				var score = (failed === false) ? attScore + cLeft * 50 + tempTime * 10 : 0
 				id('score').textContent = score;
 				//If they've already played this level, don't add their score to the total
-				accumScore +=  (passedLevels[level + 1] === false) ? 0 : score;
+				accumScore += score;
 				id('totalScore').textContent = accumScore;
 				
 				
