@@ -83,13 +83,13 @@ a{
 
 <canvas id='canvas'>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
 
-<audio id='track' src='track.wav' loop="loop"></audio>
-<audio id='blast' src='sfx/blast.wav'></audio>
-<audio id='die' src='sfx/die.wav'></audio>
-<audio id='expanding' src='sfx/expanding.wav'></audio>
-<audio id='freeze' src='sfx/freeze.wav'></audio>
-<audio id='hitWall' src='sfx/hitWall.wav'></audio>
-<audio id='levelComplete' src='sfx/levelComplete.wav'></audio>
+<audio id='track' src='track.wav' loop="loop" preload="auto"></audio>
+<audio id='blast' src='sfx/blast.wav' preload="auto"></audio>
+<audio id='die' src='sfx/die.wav' preload="auto"></audio>
+<audio id='expanding' src='sfx/expanding.wav' preload="auto"></audio>
+<audio id='freeze' src='sfx/freeze.wav' preload="auto"></audio>
+<audio id='hitWall' src='sfx/hitWall.wav' preload="auto"></audio>
+<audio id='levelComplete' src='sfx/levelComplete.wav' preload="auto"></audio>
 
 <div id='bottom'>
 	Music<input id='music' type='checkbox'>
@@ -98,7 +98,7 @@ a{
 
 <div id='credits' style='position:absolute; display : none; color:white; padding : 10px;'>
 	<center>
-	Thanks to Gordon Simpson for allowing me and helping me make a canvas version of his flash game (which can be found <a href='http://irRegularGames.com/'>here.</a>)
+	Thanks to Gordon Simpson for allowing me and helping me make a canvas version of his flash game (which can be found <a href='http://irRegularGames.com/cirplosion/'>here.</a>)
 	<br>Spoiler: His game is also called Cirplosion.
 	<p>
 		Music : Ground Control by Rimela
