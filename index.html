@@ -42,6 +42,10 @@ td, tr{
 #replay, #next{
 	cursor : pointer;
 }
+a{
+	color : white;
+	font-weight : bold;
+}
 </style>
 </head>
 
@@ -78,6 +82,35 @@ td, tr{
 </table>
 
 <canvas id='canvas'>Your browser doesn't support the canvas element. Try updating your browser, or using a different browser (such as Chrome, Firefox or Safari)</canvas>
+
+<audio id='track' src='track.wav' loop="loop"></audio>
+<audio id='blast' src='sfx/blast.wav'></audio>
+<audio id='die' src='sfx/die.wav'></audio>
+<audio id='expanding' src='sfx/expanding.wav'></audio>
+<audio id='freeze' src='sfx/freeze.wav'></audio>
+<audio id='hitWall' src='sfx/hitWall.wav'></audio>
+<audio id='levelComplete' src='sfx/levelComplete.wav'></audio>
+
+<div id='bottom'>
+	Music<input id='music' type='checkbox'>
+	SFX<input id='sfx' type='checkbox'>
+</div>
+
+<div id='credits' style='position:absolute; display : none; color:white; padding : 10px;'>
+	<center>
+	Thanks to Gordon Simpson for allowing me and helping me make a canvas version of his flash game (which can be found <a href='http://irRegularGames.com/'>here.</a>)
+	<br>Spoiler: His game is also called Cirplosion.
+	<p>
+		Music : Ground Control by Rimela
+		<br>
+		SFX : <a href='http://flashkit.com'>FlashKit.com</a>
+	</p>
+	<p>
+		Game developed by <a href='http://twitter.com/AmaanC'>Amaan Cheval.</a>
+	</p>
+	</center>
+</div>
+
 <script>
 // I'm going to call the weird circle thing that grows the 'bomb' and the other bouncing circles just circles. In the middle somewhere, I played the game again, and started calling them orbs. So circles === orbs
 
@@ -153,7 +186,8 @@ var Game = function (){
 	    cLeft = 0,
 	    time = 0,
 	    accumScore = 0;
-	    failed = false;
+	    failed = false,
+	    playsfx = true;
 	
 	//Easier than document.getElementById. And it's a private function, so it harms no one
 	function id(a){
@@ -167,7 +201,7 @@ var Game = function (){
 		var touchm = ("ontouchmove" in canvas);
 		if(touchm){
 			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight - id('top').offsetHeight; // For touch screen devices, make it go fullscreen
+			canvas.height = window.innerHeight - id('top').offsetHeight - id('bottom').offsetHeight; // For touch screen devices, make it go fullscreen
 			//Keep it in ratio
 			tinyRad = canvas.width / 100;
 			bigRad = tinyRad * 3;
@@ -175,6 +209,8 @@ var Game = function (){
 				e.preventDefault();
 			}, false);
 			//Note to self: Opera needs the 3rd boolean paramater in addEventListener.
+			
+			
 		}
 		else {
 			canvas.width = 500;
@@ -234,6 +270,28 @@ var Game = function (){
 			clearInterval(int);
 			that.goto(level);
 		}, false);
+		
+		id('track').play();
+		id('music').checked = true;
+		id('music').addEventListener('click', function (){
+			if(this.checked){
+				id('track').play();
+			}
+			else{
+				id('track').pause();
+			}
+		}, false);
+		
+		id('sfx').checked = true;
+		id('sfx').addEventListener('click', function (){
+			playsfx = this.checked
+		}, false);
+		
+		var credits = id('credits');
+		credits.style.width = canvas.width + 'px';
+		credits.style.height = canvas.height + 'px';
+		credits.style.left = canvas.offsetLeft + 'px';
+		credits.style.top = canvas.offsetTop + 'px';
 	};
 	
 	this.collide = function (obj1){
@@ -268,6 +326,11 @@ var Game = function (){
 			passedLevels[level + 1] = true;
 			failed = false;
 			clearInterval(int);
+			state = '';
+			frozen = false;
+			if(playsfx === true){
+				id('levelComplete').play();
+			}
 			this.menu('level');
 		}
 		
@@ -276,9 +339,6 @@ var Game = function (){
 			this.menu('level');
 			failed = true;
 			att++;
-			console.log(time);
-			console.log(cLeft);
-			console.log(level);
 		}
 		
 		
@@ -301,10 +361,16 @@ var Game = function (){
 						if(cir[i].type === 'freeze'){
 							cir[i] = undefined;
 							frozen = true;
+							if(playsfx === true){
+								id('freeze').play();
+							}
 							break;
 						}
 						else {
 							state = '';
+							if(playsfx === true){
+								id('die').play();
+							}
 						}
 					}
 					else if(state === 'boom' && cir[i].type !== 'freeze'){
@@ -313,6 +379,9 @@ var Game = function (){
 						}
 						if(cir[i].type !== 'split'){
 							cir[i] = undefined;
+						}
+						if(playsfx === true){
+							id('blast').play();
 						}
 					}
 					
@@ -361,8 +430,13 @@ var Game = function (){
 					this.y - rad <= 0
 				) {
 					state = '';
+					if(playsfx === true){
+						id('hitWall').play();
+					}
 				}
-				
+				else if(playsfx === true){
+					id('expanding').play();
+				}
 				this.circle(this.x, this.y, rad, this.selectedColour);
 				break;
 			case 'ready':
@@ -385,13 +459,15 @@ var Game = function (){
 					yFromImpact *= (cir[i].y >= this.y) ? 3 : -3;
 					cir[i].disx += xFromImpact;
 					cir[i].disy += yFromImpact;
+					
+					//There's got to be some limit to the speed of the orbs.
 					if(cir[i].disx > 10){
 						cir[i].disx = 10;
 					}
 					if(cir[i].disy > 10){
 						cir[i].disy = 10;
 					}
-					//There's got to be some limit to the speed of the orbs.
+					
 					if(cir[i].type === 'split'){
 						cir[i].type = 'tiny';
 					}
@@ -491,13 +567,18 @@ var Game = function (){
 		this.clearDivs();
 		switch(which){
 			case 'main':
-				Cirplosion.newDiv(0.5, 0.5, 'Play!', null, true, function (){
+				id('credits').style.display = 'none';
+				this.newDiv(0.5, 0.5, 'Play!', null, true, function (){
 					that.play();
 				});
-				Cirplosion.newDiv(0.5, 0.2, '1. Hold down mouse button to expand a circle\n2. Release mouse button before circle touches orange orbs or the edges\n3. Position transparent circle over orbs and click to destroy!', 'helpText', true);
+				this.newDiv(0.5, 0.2, '1. Hold down mouse button to expand a circle\n2. Release mouse button before circle touches orange orbs or the edges\n3. Position transparent circle over orbs and click to destroy!', 'helpText', true);
+				this.newDiv(0.5, 0.8, 'Credits', null, true, function (){
+					that.menu('credits');
+				});
 				break;
 			case 'level':
 				var levelMenu = id('levelMenu');
+				id('credits').style.display = 'none';
 				levelMenu.style.display = 'block';
 				id('attempts').textContent = att;
 				id('cirpLeft').textContent = cLeft;
@@ -527,6 +608,13 @@ var Game = function (){
 				else{
 					id('next').style.display = 'none';
 				}
+				break;
+			case 'credits':
+				id('levelMenu').style.display = 'none';
+				id('credits').style.display = 'block';
+				this.newDiv(0.3, 0.8, 'Back', null, true, function (){
+					that.menu('main');
+				});
 				break;
 		}
 	}
