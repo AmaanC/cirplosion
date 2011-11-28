@@ -60,6 +60,12 @@ a{
 	</span>
 </div>
 
+<div id='failMenu' style='position:absolute; padding: 10px; border: 1px solid white; display: none; border-radius: 10px; color: white;'>
+	<span id='failedText'></span>
+	<br><br>
+	<span id='tryAgain' style='cursor:pointer'>Try again?</span>
+</div>
+
 <table id='levelMenu' class='center' style='border : 1px solid white; display : none; border-radius : 10px; color : white;'>
 	<tr>
 		<td>Attempts: </td><td id='attempts'></td> <td id='attScore'></td>
@@ -137,7 +143,6 @@ var Game = function (){
 	    ctx,
 	    score = 0, //Private variables ftw!
 	    level = -1,
-	    
 	    //Thanks to Gordan from http://irRegularGames.com for giving me the numbers of orbs and the time each level is allotted
 	    orbLevels = [
 	    		//1
@@ -193,7 +198,10 @@ var Game = function (){
 	    failed = false,
 	    playsfx = true,
 	    paused = false,
-	    onMenu = true;
+	    onMenu = true,
+	    failCirp = false,
+	    cirpComments = ['Hey, waste all the cirplosions you want! Not like they\'re limited!', 'You know you CAN cirplode more orbs at once', 'Cirplosions are fun. Try cirploding an orb next time.', 'The unborn orb babies thank you.', 'Hah! Sucker! You\'re out of cirplosions!'],
+	    timeComments = ['Try not taking all the time you have. We know you have a lot.', 'You didn\'t run out of time.....bazinga!', 'I understand. The timer on the top left is hard to see.', 'Time is limited. Unicorns are awesome. You suck at games. (Was that a haiku?)', 'Time\'s up. Go cry to your mom!'];
 	
 	//Easier than document.getElementById. And it's a private function, so it harms no one
 	function id(a){
@@ -319,6 +327,11 @@ var Game = function (){
 			clearInterval(int);
 			that.goto(level);
 		}, false);
+	
+		id('tryAgain').addEventListener('click', function (){
+			clearInterval(int);
+			that.goto(level);
+		}, false);
 	};
 	
 	this.collide = function (obj1){
@@ -353,7 +366,6 @@ var Game = function (){
 			passedLevels[level + 1] = true;
 			failed = false;
 			clearInterval(int);
-			
 			state = '';
 			frozen = false;
 			if(playsfx === true){
@@ -364,9 +376,9 @@ var Game = function (){
 		
 		if((time < 0 || cLeft <= 0) && level !== -1 && id('levelMenu').style.display === 'none'){
 			clearInterval(int);
-			
-			this.menu('level');
 			failed = true;
+			failCirp = (cLeft <= 0);
+			this.menu('level');
 			att++;
 		}
 		
@@ -614,29 +626,38 @@ var Game = function (){
 				break;
 			case 'level':
 				var levelMenu = id('levelMenu');
-				levelMenu.style.display = 'block';
-				id('attempts').textContent = att;
-				id('cirpLeft').textContent = cLeft;
-				//Can't round the actual value of time because then it'll become 0, and make the user fail the level.
-				var tempTime = Math.round(time);
-				id('timeLeft').textContent = tempTime;
-				var attScore = 100 * Math.pow(0.5, att - 1);
-				if(attScore < 25){
-					attScore = 0;
+				if(failed === false){
+					levelMenu.style.display = 'block';
+					id('failMenu').style.display = 'none';
+					id('attempts').textContent = att;
+					id('cirpLeft').textContent = cLeft;
+					//Can't round the actual value of time because then it'll become 0, and make the user fail the level.
+					var tempTime = Math.round(time);
+					id('timeLeft').textContent = tempTime;
+					var attScore = 100 * Math.pow(0.5, att - 1);
+					if(attScore < 25){
+						attScore = 0;
+					}
+					id('attScore').textContent = attScore;
+					id('cirScore').textContent = cLeft * 50;
+					id('timeScore').textContent = tempTime * 10;
+					//If they failed the level, just show the score they would have gotten. But the actual score they get is 0.
+					var score = (failed === false) ? attScore + cLeft * 50 + tempTime * 10 : 0;
+					id('score').textContent = score;
+					accumScore += score;
+					id('totalScore').textContent = accumScore;
+
+					levelMenu.style.left = (canvas.width - levelMenu.offsetWidth) / 2 + 'px';
+					levelMenu.style.top = (canvas.height - levelMenu.offsetHeight) / 2 + 'px';
 				}
-				id('attScore').textContent = attScore;
-				id('cirScore').textContent = cLeft * 50;
-				id('timeScore').textContent = tempTime * 10;
-				//If they failed the level, just show the score they would have gotten. But the actual score they get is 0.
-				var score = (failed === false) ? attScore + cLeft * 50 + tempTime * 10 : 0
-				id('score').textContent = score;
-				//If they've already played this level, don't add their score to the total
-				accumScore += score;
-				id('totalScore').textContent = accumScore;
-				
-				
-				levelMenu.style.left = (canvas.width - levelMenu.offsetWidth) / 2 + 'px';
-				levelMenu.style.top = (canvas.height - levelMenu.offsetHeight) / 2 + 'px';
+				else{
+					var failmenu = id('failMenu');
+					failmenu.style.display = 'block';
+					id('levelMenu').style.display = 'none';
+					id('failedText').textContent = failCirp ? cirpComments[Math.floor(Math.random() * cirpComments.length)] : timeComments[Math.floor(Math.random() * timeComments.length)];
+					failmenu.style.left = (canvas.width - failmenu.offsetWidth) / 2 + 'px';
+					failmenu.style.top = (canvas.height - failmenu.offsetHeight) / 2 + 'px';
+				}
 				
 				if(passedLevels[level + 1] === true){
 					id('next').style.display = 'block';
@@ -669,6 +690,7 @@ var Game = function (){
 			cLeft = orbLevels[level].cirp;
 			id('cirplosions').textContent = cLeft;
 			id('levelMenu').style.display = 'none';
+			id('failMenu').style.display = 'none';
 			drawCircles(orbLevels[level].tiny, 'tiny');
 			drawCircles(orbLevels[level].big, 'big');
 			drawCircles(orbLevels[level].freeze, 'freeze');
@@ -678,6 +700,10 @@ var Game = function (){
 			}, 100/3);
 		}
 		onMenu = false;
+		if(paused === true){
+			paused = false;
+			pause.textContent = 'Pause';
+		};
 	}
 	
 	this.pauseToggle = function (){
